@@ -479,6 +479,7 @@ function saveManualEdit() {
     displayResult(lastSchedule);
     drawMatrixTable();
     saveState();
+    // tesutodanyo---n
     
     alert("座席と履歴を更新しました。");
 };
