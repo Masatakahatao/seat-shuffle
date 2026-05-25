@@ -209,17 +209,50 @@ async function solveSA(players, numGroups, matrix) {
     
     const getCost = (s) => {
         let cost = 0;
-        s.forEach(g => {
+        
+        // ★ 直近（前回）のスケジュールがあるか確認
+        const hasLastSchedule = appState.lastSchedule && appState.lastSchedule.length > 0;
+
+        // --- 【新機能】前回と同じ班番号に連続で入るのを防ぐための前処理 ---
+        // 各プレイヤーが前回「何番の班（インデックス）」だったかを記録するマップを作る
+        // 例: playerLastGroup[5] = 2 (プレイヤー5は前回2番目の班だった)
+        const playerLastGroup = {};
+        if (hasLastSchedule) {
+            appState.lastSchedule.forEach((lastGroup, groupIndex) => {
+                lastGroup.forEach(player => {
+                    playerLastGroup[player] = groupIndex;
+                });
+            });
+        }
+        // -----------------------------------------------------------------
+
+        s.forEach((g, currentGroupIndex) => {
             for (let i = 0; i < g.length; i++) {
+                
+                // --- 【新機能】個人の連続班番号ペナルティ ---
+                if (hasLastSchedule) {
+                    const currentPlayer = g[i];
+                    // このプレイヤーが、前回所属していた班の番号を取得
+                    const lastGroupIndex = playerLastGroup[currentPlayer];
+                    
+                    // もし前回の班番号と、今回の班番号（currentGroupIndex）が同じなら
+                    if (lastGroupIndex === currentGroupIndex) {
+                        // 絶対にその班にならないよう、超巨大なペナルティを加算
+                        cost += 1000000; 
+                    }
+                }
+                // ------------------------------------------
+
                 for (let j = i + 1; j < g.length; j++) {
-                    const count = matrix[g[i]][g[j]];
+                    const p1 = g[i];
+                    const p2 = g[j];
+                    const count = matrix[p1][p2];
+
                     if (count === 0) {
-                        // 【強化】未遭遇ペアには強力なボーナス（コストを大幅に下げる）
-                        // これにより、アルゴリズムが「0」を埋めることを最優先します
+                        // 未遭遇ペアには強力なボーナス
                         cost -= 1000; 
                     } else {
-                        // 【強化】既遭遇ペアにはペナルティ
-                        // 2乗ではなく3乗にすることで、複数回被ることを強く嫌うようにします
+                        // 既遭遇ペアにはペナルティ
                         cost += Math.pow(count + 1, 3) * 10;
                     }
                 }
