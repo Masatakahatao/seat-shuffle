@@ -533,23 +533,33 @@ function importCSV(input) {
         }
 
         // 現在の設定人数と班の数を取得
-        const P = parseInt(document.getElementById('playerCount').value);
-        const G = parseInt(document.getElementById('groupCount').value);
+        const P = parseInt(document.getElementById('playerCount').value || 40);
+        const G = parseInt(document.getElementById('groupCount').value || 7);
 
-        // データを初期化
-        appState.matrix = Array.from({ length: P + 1 }, () => Array(P + 1).fill(0));
-        appState.lastSchedule = [];
-        appState.history = [];
+        // 現在のアプリの状態に合わせて、履歴行列とスタックを完全に初期化
+        appState.numPlayers = P;
+        appState.numGroups = G;
+        appState.dayCount = 2; // 昨日分を取り込むので、次回は「2回目」になる
+        appState.historyMatrix = Array.from({ length: P + 1 }, () => Array(P + 1).fill(0));
+        appState.lastSchedule = null;
+        appState.historyStack = [];
+
+        // 0日目（空っぽの状態）をスタックの底に仕込む
+        const initialSnapshot = JSON.parse(JSON.stringify({
+            dayCount: 1,
+            historyMatrix: Array.from({ length: P + 1 }, () => Array(P + 1).fill(0)),
+            lastSchedule: null
+        }));
+        appState.historyStack.push(initialSnapshot);
 
         let currentSchedule = [];
 
         lines.forEach((line) => {
-            // 「1班:」や「【5/14...】」などの見出し行、空行を飛ばすための処理
             // コロン（:）や全角コロン（：）の右側のテキストだけを対象にする（コロンがなければ行全体）
             const parts = line.split(/[:：]/);
             const dataPart = parts.length > 1 ? parts[1] : parts[0];
 
-            // カンマ、スペース、タブ、読点などで数字を区切って配列にする
+            // カンマ、スペース、読点などで数字を区切って配列にする
             const members = dataPart.split(/[,,、 \t]+/)
                                     .map(n => parseInt(n.trim()))
                                     .filter(n => !isNaN(n)); // 数字じゃないものは除外
@@ -564,8 +574,8 @@ function importCSV(input) {
                         const p1 = members[i];
                         const p2 = members[j];
                         if (p1 <= P && p2 <= P) {
-                            appState.matrix[p1][p2]++;
-                            appState.matrix[p2][p1]++;
+                            appState.historyMatrix[p1][p2]++;
+                            appState.historyMatrix[p2][p1]++;
                         }
                     }
                 }
@@ -574,12 +584,23 @@ function importCSV(input) {
 
         if (currentSchedule.length > 0) {
             // 直近のスケジュール（昨日分）として記憶
+            lastSchedule = currentSchedule;
             appState.lastSchedule = currentSchedule;
-            appState.history.push(currentSchedule);
             
-            // データをブラウザに保存して画面を更新
-            saveData();
-            initOperation();
+            // 最新の「昨日分を取り込み終わった状態」をスタックの2番目に積む
+            const yesterdaySnapshot = JSON.parse(JSON.stringify({
+                dayCount: appState.dayCount,
+                historyMatrix: appState.historyMatrix,
+                lastSchedule: lastSchedule
+            }));
+            appState.historyStack.push(yesterdaySnapshot);
+            
+            // データをブラウザに正しく保存して画面を更新（関数名を今のJSに統一）
+            saveState();
+            showOperationMode();
+            drawMatrixTable();
+            displayResult(lastSchedule);
+            
             alert("過去の履歴を正常に読み込みました！これで明日から「同じ班番号を避ける」運用ができます。");
         } else {
             alert("有効なメンバーデータが見つかりませんでした。ファイルの中身を確認してください。");
