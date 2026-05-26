@@ -516,3 +516,74 @@ function saveManualEdit() {
     
     alert("座席と履歴を更新しました。");
 };
+
+// スマホ移行用：テキスト形式の履歴（班名付き）でも柔軟に読み込めるCSVインポート機能
+function importCSV(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
+        
+        if (lines.length === 0) {
+            alert("CSVファイルが空、または正しく読み込めませんでした。");
+            return;
+        }
+
+        // 現在の設定人数と班の数を取得
+        const P = parseInt(document.getElementById('playerCount').value);
+        const G = parseInt(document.getElementById('groupCount').value);
+
+        // データを初期化
+        appState.matrix = Array.from({ length: P + 1 }, () => Array(P + 1).fill(0));
+        appState.lastSchedule = [];
+        appState.history = [];
+
+        let currentSchedule = [];
+
+        lines.forEach((line) => {
+            // 「1班:」や「【5/14...】」などの見出し行、空行を飛ばすための処理
+            // コロン（:）や全角コロン（：）の右側のテキストだけを対象にする（コロンがなければ行全体）
+            const parts = line.split(/[:：]/);
+            const dataPart = parts.length > 1 ? parts[1] : parts[0];
+
+            // カンマ、スペース、タブ、読点などで数字を区切って配列にする
+            const members = dataPart.split(/[,,、 \t]+/)
+                                    .map(n => parseInt(n.trim()))
+                                    .filter(n => !isNaN(n)); // 数字じゃないものは除外
+
+            // メンバーが1人以上検出された行だけを「班」として追加
+            if (members.length > 0) {
+                currentSchedule.push(members);
+                
+                // 遭遇マトリクス（ヒートマップ）の更新
+                for (let i = 0; i < members.length; i++) {
+                    for (let j = i + 1; j < members.length; j++) {
+                        const p1 = members[i];
+                        const p2 = members[j];
+                        if (p1 <= P && p2 <= P) {
+                            appState.matrix[p1][p2]++;
+                            appState.matrix[p2][p1]++;
+                        }
+                    }
+                }
+            }
+        });
+
+        if (currentSchedule.length > 0) {
+            // 直近のスケジュール（昨日分）として記憶
+            appState.lastSchedule = currentSchedule;
+            appState.history.push(currentSchedule);
+            
+            // データをブラウザに保存して画面を更新
+            saveData();
+            initOperation();
+            alert("過去の履歴を正常に読み込みました！これで明日から「同じ班番号を避ける」運用ができます。");
+        } else {
+            alert("有効なメンバーデータが見つかりませんでした。ファイルの中身を確認してください。");
+        }
+    };
+    reader.readAsText(file);
+}
