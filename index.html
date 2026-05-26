@@ -4,18 +4,102 @@
     <meta charset="UTF-8">
     <title>席決め管理システム</title>
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 10px; background: #f4f7f6; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h1, h2 { color: #333; border-left: 5px solid #2196F3; padding-left: 10px; }
+        /* 全体のベース調整（スマホでも文字が小さくなりすぎないようにする） */
+        body { 
+            font-family: sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 15px; 
+            background: #f4f7f6; 
+            box-sizing: border-box;
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        /* カードの余白をスマホ用に少しスリムに */
+        .card { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+            margin-bottom: 15px; 
+        }
+        
+        h1, h2 { color: #333; border-left: 5px solid #2196F3; padding-left: 10px; font-size: 1.4rem; }
+        h3 { font-size: 1.1rem; margin-top: 0; }
+
+        /* 入力欄をスマホでもタップ・入力しやすく */
         .input-group { margin: 15px 0; }
-        input[type="number"], input[type="text"] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100px; }
-        input[type="text"] { width: 250px; }
-        button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        input[type="number"], input[type="text"] { 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            width: 100%; /* 横幅いっぱいに広げる */
+            box-sizing: border-box;
+            font-size: 16px; /* iOSでズームされるのを防ぐサイズ */
+        }
+        
+        /* ボタンを「親指サイズ」に大きく、タップしやすく変更 */
+        button { 
+            padding: 12px 20px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 15px;
+            width: 100%; /* 基本は横幅いっぱい（押しやすさ重視） */
+            margin-bottom: 10px; /* ボタン同士がくっつかないように */
+            display: block;
+            box-sizing: border-box;
+            transition: background 0.2s;
+        }
+        
+        /* PCや広い画面ではボタンを横並びにする設定 */
+        @media (min-width: 480px) {
+            input[type="number"] { width: 100px; }
+            input[type="text"] { width: 250px; }
+            button { width: auto; display: inline-block; margin-right: 10px; margin-bottom: 0; }
+        }
+
         .btn-primary { background: #2196F3; color: white; }
-        .btn-danger { background: #f44336; color: white; margin-top: 20px; }
-        .btn-undo { background: #ff9800; color: white; margin-top: 20px; }
-        .result-group { display: inline-block; vertical-align: top; margin: 5px; padding: 10px; border: 1px solid #eee; border-radius: 4px; min-width: 120px; }
-        #status-display { font-size: 1.2em; color: #1565C0; font-weight: bold; }
+        .btn-primary:active { background: #1976D2; }
+        .btn-secondary { background: #e0e0e0; color: #333; }
+        .btn-secondary:active { background: #d5d5d5; }
+        .btn-danger { background: #f44336; color: white; margin-top: 15px; }
+        .btn-danger:active { background: #d32f2f; }
+        
+        /* 結果表示の班ごとのスタイル（スマホでも綺麗に並ぶようにGridを採用） */
+        #schedule-output {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .group-card {
+            background: #eef5f9;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid #00bcd4;
+        }
+        .group-card h4 { margin: 0 0 5px 0; color: #00bcd4; }
+        
+        /* ヒートマップテーブルがスマホからはみ出しても、横スクロールできるようにする */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+        
+        #matrix-table { 
+            font-size: 12px; 
+            border-collapse: collapse; 
+            text-align: center; 
+            width: 100%;
+            min-width: 400px; /* テーブルが潰れすぎないように最低幅を確保 */
+        }
+        #matrix-table td, #matrix-table th { padding: 6px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
@@ -69,7 +153,7 @@
     <div id="debug-section" class="card" style="margin-top: 30px;">
         <h3>遭遇履歴ヒートマップ (デバッグ用)</h3>
         <p style="font-size: 0.8em; color: #666;">※色が濃いほど遭遇回数が多いペアです（8段階表示）</p>
-        <div style="overflow-x: auto;">
+       <div class="table-container">
             <table id="matrix-table" style="font-size: 11px; border-collapse: collapse; text-align: center;"></table>
         </div>
     </div>
