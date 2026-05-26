@@ -76,13 +76,12 @@
             margin-top: 15px;
         }
         
-        .group-card {
+        .result-group {
             background: #eef5f9;
             padding: 12px;
             border-radius: 6px;
             border-left: 4px solid #00bcd4;
         }
-        .group-card h4 { margin: 0 0 5px 0; color: #00bcd4; }
         
         /* ヒートマップテーブルがスマホからはみ出しても、横スクロールできるようにする */
         .table-container {
@@ -107,7 +106,14 @@
 
     <h1>席決め管理システム</h1>
 
-    <!-- 1. 初期設定セクション（初回またはリセット時のみ表示） -->
+    <div class="card" style="background: #fff3e0; border-left: 5px solid #ff9800;">
+        <p style="margin: 0 0 8px 0; font-size: 0.85rem; font-weight: bold; color: #e65100;">📱 スマホへの移行・過去データの読み込み：</p>
+        <button class="btn-secondary" type="button" onclick="document.getElementById('csv-import').click()" style="margin-bottom: 0; background: white; border: 1px solid #ffcc80; color: #e65100;">
+            📥 過去の履歴を読み込む (CSV)
+        </button>
+        <input type="file" id="csv-import" accept=".csv" style="display: none;" onchange="importCSV(this)">
+    </div>
+
     <div id="setup-section" class="card" style="display: none;">
         <h2>初期設定</h2>
         <p>全体の人数と班の数を入力して開始してください。</p>
@@ -122,7 +128,6 @@
         <button class="btn-primary" onclick="startOperation()">運用を開始する</button>
     </div>
 
-    <!-- 2. 運用セクション（2回目以降に表示） -->
     <div id="operation-section" class="card" style="display: none;">
         <div id="status-display">読み込み中...</div>
         <hr>
@@ -137,7 +142,6 @@
         <button class="btn-undo" onclick="undoLastAction()">↩️ 1日戻る</button>
     </div>
 
-    <!-- 3. 結果表示セクション -->
     <div id="result-area" class="card" style="display: none;">
         <h2>本日の席順</h2>
         <div id="schedule-output"></div>
@@ -148,11 +152,6 @@
             
             <button class="btn-secondary" onclick="copyToClipboard()">📋 結果をコピー</button>
             <button class="btn-secondary" onclick="exportCSV()">📁 CSVエクスポート</button>
-
-            <button class="btn-secondary" type="button" onclick="document.getElementById('csv-import').click()">
-                📥 過去の履歴を読み込む (CSV)
-            </button>
-            <input type="file" id="csv-import" accept=".csv" style="display: none;" onchange="importCSV(this)">
         </div>
     </div>
 
